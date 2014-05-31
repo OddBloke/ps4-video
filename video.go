@@ -10,37 +10,37 @@ import (
 	"github.com/gorilla/handlers"
 )
 
-var VideoFilesLocation = "/videos/"
+var videoFilesLocation = "/videos/"
 
-func video_page_handler(w http.ResponseWriter, r *http.Request) {
-	file_name := strings.TrimPrefix(r.URL.Path, "/video/")
+func videoPageHandler(w http.ResponseWriter, r *http.Request) {
+	fileName := strings.TrimPrefix(r.URL.Path, "/video/")
 	t, _ := template.ParseFiles("video.html")
-	t.Execute(w, VideoFilesLocation+file_name)
+	t.Execute(w, videoFilesLocation+fileName)
 }
 
-func index_handler(w http.ResponseWriter, r *http.Request) {
-	var file_names []string
-	video_directory := os.Args[1]
-	file_infos, _ := ioutil.ReadDir(video_directory)
-	for _, file_info := range file_infos {
-		if strings.HasSuffix(file_info.Name(), ".mp4") {
-			file_names = append(file_names, file_info.Name())
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	var fileNames []string
+	videoDirectory := os.Args[1]
+	fileInfos, _ := ioutil.ReadDir(videoDirectory)
+	for _, fileInfo := range fileInfos {
+		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
+			fileNames = append(fileNames, fileInfo.Name())
 		}
 	}
 	t, _ := template.ParseFiles("index.html")
-	t.Execute(w, file_names)
+	t.Execute(w, fileNames)
 }
 
-func handle_stripped_static_files(prefix string, location string) {
-	file_handler := http.StripPrefix(prefix, http.FileServer(http.Dir(location)))
-	logging_handler := handlers.CombinedLoggingHandler(os.Stdout, file_handler)
-	http.Handle(prefix, logging_handler)
+func handleStrippedStaticFiles(prefix string, location string) {
+	fileHandler := http.StripPrefix(prefix, http.FileServer(http.Dir(location)))
+	loggingHandler := handlers.CombinedLoggingHandler(os.Stdout, fileHandler)
+	http.Handle(prefix, loggingHandler)
 }
 
 func main() {
-	handle_stripped_static_files("/static/", "static")
-	handle_stripped_static_files(VideoFilesLocation, os.Args[1])
-	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(video_page_handler)))
-	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(index_handler)))
+	handleStrippedStaticFiles("/static/", "static")
+	handleStrippedStaticFiles(videoFilesLocation, os.Args[1])
+	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoPageHandler)))
+	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(indexHandler)))
 	http.ListenAndServe(":8123", nil)
 }
