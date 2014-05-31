@@ -22,19 +22,11 @@ type videoIndexHandler struct {
 	videoDirectory string
 }
 
-func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
-	var videoFiles []videoFile
-	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
-	for _, fileInfo := range fileInfos {
-		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			file := videoFile{fileInfo.Name()}
-			videoFiles = append(videoFiles, file)
-		}
-	}
+func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 	var rows [][]videoFile
 	var new_row []videoFile
 	for _, file := range videoFiles {
-		if len(new_row) == 3 {
+		if len(new_row) == rowLength {
 			rows = append(rows, new_row)
 			new_row = []videoFile{file}
 		} else {
@@ -44,8 +36,20 @@ func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
 	if len(new_row) > 0 {
 		rows = append(rows, new_row)
 	}
+	return rows
+}
+
+func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
+	var videoFiles []videoFile
+	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
+	for _, fileInfo := range fileInfos {
+		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
+			file := videoFile{fileInfo.Name()}
+			videoFiles = append(videoFiles, file)
+		}
+	}
 	t, _ := template.ParseFiles("templates/index.html")
-	t.Execute(w, rows)
+	t.Execute(w, makeVideoRows(videoFiles, 3))
 }
 
 func videoPageHandler(w http.ResponseWriter, r *http.Request) {
