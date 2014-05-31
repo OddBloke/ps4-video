@@ -10,16 +10,12 @@ import (
 	"github.com/gorilla/handlers"
 )
 
-type VideoPage struct {
-	Host     string
-	FileName string
-}
+var VideoFilesLocation = "/videos/"
 
-func video_handler(w http.ResponseWriter, r *http.Request) {
-	host := strings.Split(r.Host, ":")[0]
+func video_page_handler(w http.ResponseWriter, r *http.Request) {
 	file_name := strings.TrimPrefix(r.URL.Path, "/video/")
 	t, _ := template.ParseFiles("video.html")
-	t.Execute(w, VideoPage{Host: host, FileName: file_name})
+	t.Execute(w, VideoFilesLocation+file_name)
 }
 
 func index_handler(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +34,8 @@ func index_handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	static_handler := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
 	http.Handle("/static/", handlers.CombinedLoggingHandler(os.Stdout, static_handler))
+	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(video_page_handler)))
+	http.Handle(VideoFilesLocation, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(VideoFilesLocation, http.FileServer(http.Dir(os.Args[1])))))
 	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(index_handler)))
-	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(video_handler)))
 	http.ListenAndServe(":8123", nil)
 }
