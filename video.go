@@ -31,11 +31,16 @@ func index_handler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, file_names)
 }
 
+func handle_stripped_static_files(prefix string, location string) {
+	file_handler := http.StripPrefix(prefix, http.FileServer(http.Dir(location)))
+	logging_handler := handlers.CombinedLoggingHandler(os.Stdout, file_handler)
+	http.Handle(prefix, logging_handler)
+}
+
 func main() {
-	static_handler := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
-	http.Handle("/static/", handlers.CombinedLoggingHandler(os.Stdout, static_handler))
+	handle_stripped_static_files("/static/", "static")
+	handle_stripped_static_files(VideoFilesLocation, os.Args[1])
 	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(video_page_handler)))
-	http.Handle(VideoFilesLocation, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(VideoFilesLocation, http.FileServer(http.Dir(os.Args[1])))))
 	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(index_handler)))
 	http.ListenAndServe(":8123", nil)
 }
