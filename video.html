@@ -1,5 +1,11 @@
 <html>
-  <video controls>
-    <source src="http://{{.Host}}/{{.FileName}}" type="video/mp4">
-  </video>
+  <head>
+    <link href="//vjs.zencdn.net/4.6/video-js.css" rel="stylesheet">
+    <script src="//vjs.zencdn.net/4.6/video.js"></script>
+  </head>
+  <body>
+    <video class="video-js vjs-default-skin" data-setup='{"controls": true}' width="640" height="480" preload="auto">
+      <source src="http://{{.Host}}/{{.FileName}}" type="video/mp4">
+    </video>
+  </body>
 </html>
