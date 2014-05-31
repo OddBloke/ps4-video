@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -40,14 +42,17 @@ func handleStrippedStaticFiles(prefix string, location string) {
 	http.Handle(prefix, loggingHandler)
 }
 
-func serve(videoDirectory string) {
+func serve(videoDirectory string, port int) {
 	handleStrippedStaticFiles("/static/", "static")
 	handleStrippedStaticFiles(videoFilesLocation, videoDirectory)
 	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoPageHandler)))
 	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoIndexHandler{videoDirectory: videoDirectory}.handle)))
-	http.ListenAndServe(":8123", nil)
+	listenAddress := fmt.Sprintf(":%d", port)
+	http.ListenAndServe(listenAddress, nil)
 }
 
 func main() {
-	serve(os.Args[1])
+	port := flag.Int("port", 8123, "Local port to serve on")
+	flag.Parse()
+	serve(flag.Arg(0), *port)
 }
