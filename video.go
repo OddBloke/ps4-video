@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/gorilla/handlers"
 )
 
 
@@ -36,8 +38,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, file_names)
 }
 
+type MyHandler struct {}
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func (h MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if (r.URL.Path == "/") {
 		index(w, r)
 	} else {
@@ -46,7 +49,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.HandleFunc("/", handler)
+	static_handler := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
+	http.Handle("/static/", handlers.CombinedLoggingHandler(os.Stdout, static_handler))
+	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, MyHandler{}))
 	http.ListenAndServe(":8123", nil)
 }
