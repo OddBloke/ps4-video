@@ -1,0 +1,9 @@
+.vjs-default-skin .vjs-progress-control {
+    height: 3em;
+    top: -3em;
+}
+
+.vjs-default-skin .vjs-seek-handle:before {
+    font-size: 3em;
+    line-height: 0.9;
+}
