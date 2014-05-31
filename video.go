@@ -26,13 +26,13 @@ func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
 			fileNames = append(fileNames, fileInfo.Name())
 		}
 	}
-	t, _ := template.ParseFiles("index.html")
+	t, _ := template.ParseFiles("templates/index.html")
 	t.Execute(w, fileNames)
 }
 
 func videoPageHandler(w http.ResponseWriter, r *http.Request) {
 	fileName := strings.TrimPrefix(r.URL.Path, "/video/")
-	t, _ := template.ParseFiles("video.html")
+	t, _ := template.ParseFiles("templates/video.html")
 	t.Execute(w, videoFilesLocation+fileName)
 }
 
