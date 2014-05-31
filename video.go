@@ -31,8 +31,21 @@ func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
 			videoFiles = append(videoFiles, file)
 		}
 	}
+	var rows [][]videoFile
+	var new_row []videoFile
+	for _, file := range videoFiles {
+		if len(new_row) == 3 {
+			rows = append(rows, new_row)
+			new_row = []videoFile{file}
+		} else {
+			new_row = append(new_row, file)
+		}
+	}
+	if len(new_row) > 0 {
+		rows = append(rows, new_row)
+	}
 	t, _ := template.ParseFiles("templates/index.html")
-	t.Execute(w, videoFiles)
+	t.Execute(w, rows)
 }
 
 func videoPageHandler(w http.ResponseWriter, r *http.Request) {

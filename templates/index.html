@@ -1,8 +1,20 @@
 <html>
-  <h1>Videos</h1>
+  <head>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+  </head>
+  <body>
+    <h1>Videos</h1>
 
-  <ul>
-  {{range .}}
-  <li><a href="/video/{{.FileName}}"><img src="/static/default-thumbnail.png">{{.FileName}}</a></li>
-  {{end}}
+    <div class="container">
+      {{range .}}
+      <div class="row">
+        {{range .}}
+        <div class="col-lg-4">
+          <a href="/video/{{.FileName}}"><img style="width: 100%" src="/static/default-thumbnail.png">{{.FileName}}</a>
+        </div>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </body>
 </html>
