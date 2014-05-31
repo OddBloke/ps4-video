@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha1"
 	"flag"
 	"fmt"
 	"html/template"
@@ -15,7 +16,8 @@ import (
 var videoFilesLocation = "/videos/"
 
 type videoFile struct {
-	FileName string
+	FileName          string
+	ThumbnailFileName string
 }
 
 type videoIndexHandler struct {
@@ -39,12 +41,24 @@ func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 	return rows
 }
 
+func (vi videoIndexHandler) getVideoThumbnailFileName(videoFileName string) string {
+	fmt.Print(videoFileName)
+	videoHash := sha1.Sum([]byte(videoFileName))
+	expectedFilename := fmt.Sprintf("%s/%x.png", vi.videoDirectory, videoHash)
+	_, err := os.Open(expectedFilename)
+	if err == nil {
+		return fmt.Sprintf("%s/%x.png", videoFilesLocation, videoHash)
+	}
+	return ""
+}
+
 func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
 	var videoFiles []videoFile
 	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			file := videoFile{fileInfo.Name()}
+			thumbnail := vi.getVideoThumbnailFileName(fileInfo.Name())
+			file := videoFile{FileName: fileInfo.Name(), ThumbnailFileName: thumbnail}
 			videoFiles = append(videoFiles, file)
 		}
 	}
