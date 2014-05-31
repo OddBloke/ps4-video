@@ -14,20 +14,25 @@ import (
 
 var videoFilesLocation = "/videos/"
 
+type videoFile struct {
+	FileName string
+}
+
 type videoIndexHandler struct {
 	videoDirectory string
 }
 
 func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
-	var fileNames []string
+	var videoFiles []videoFile
 	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			fileNames = append(fileNames, fileInfo.Name())
+			file := videoFile{fileInfo.Name()}
+			videoFiles = append(videoFiles, file)
 		}
 	}
 	t, _ := template.ParseFiles("templates/index.html")
-	t.Execute(w, fileNames)
+	t.Execute(w, videoFiles)
 }
 
 func videoPageHandler(w http.ResponseWriter, r *http.Request) {
