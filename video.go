@@ -12,16 +12,13 @@ import (
 
 var videoFilesLocation = "/videos/"
 
-func videoPageHandler(w http.ResponseWriter, r *http.Request) {
-	fileName := strings.TrimPrefix(r.URL.Path, "/video/")
-	t, _ := template.ParseFiles("video.html")
-	t.Execute(w, videoFilesLocation+fileName)
+type videoIndexHandler struct {
+	videoDirectory string
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
 	var fileNames []string
-	videoDirectory := os.Args[1]
-	fileInfos, _ := ioutil.ReadDir(videoDirectory)
+	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
 			fileNames = append(fileNames, fileInfo.Name())
@@ -31,16 +28,26 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, fileNames)
 }
 
+func videoPageHandler(w http.ResponseWriter, r *http.Request) {
+	fileName := strings.TrimPrefix(r.URL.Path, "/video/")
+	t, _ := template.ParseFiles("video.html")
+	t.Execute(w, videoFilesLocation+fileName)
+}
+
 func handleStrippedStaticFiles(prefix string, location string) {
 	fileHandler := http.StripPrefix(prefix, http.FileServer(http.Dir(location)))
 	loggingHandler := handlers.CombinedLoggingHandler(os.Stdout, fileHandler)
 	http.Handle(prefix, loggingHandler)
 }
 
-func main() {
+func serve(videoDirectory string) {
 	handleStrippedStaticFiles("/static/", "static")
-	handleStrippedStaticFiles(videoFilesLocation, os.Args[1])
+	handleStrippedStaticFiles(videoFilesLocation, videoDirectory)
 	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoPageHandler)))
-	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(indexHandler)))
+	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoIndexHandler{videoDirectory: videoDirectory}.handle)))
 	http.ListenAndServe(":8123", nil)
+}
+
+func main() {
+	serve(os.Args[1])
 }
