@@ -85,12 +85,12 @@ func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 	return rows
 }
 
-func (vi videoIndexContext) handleRequest(w http.ResponseWriter, r *http.Request) {
+func (context videoIndexContext) handleRequest(w http.ResponseWriter, r *http.Request) {
 	var videoFiles []videoFile
-	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
+	fileInfos, _ := ioutil.ReadDir(context.videoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			file := NewVideoFile(vi, fileInfo.Name())
+			file := NewVideoFile(context, fileInfo.Name())
 			videoFiles = append(videoFiles, file)
 		}
 	}
