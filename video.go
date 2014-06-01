@@ -16,13 +16,44 @@ import (
 
 var videoFilesLocation = "/videos/"
 
+type videoFilename string
+
 type videoFile struct {
-	FileName          string
-	ThumbnailFileName string
+	FileName  string
+	Thumbnail indexThumbnail
 }
 
-type videoIndexHandler struct {
+func (v videoFilename) hash() string {
+	videoHash := sha1.Sum([]byte(v))
+	return fmt.Sprintf("%x", videoHash)
+}
+
+type videoIndexContext struct {
 	videoDirectory string
+}
+
+type indexThumbnail struct {
+	videoLocation      string
+	fileSystemLocation string
+	URL                string
+}
+
+func CreateThumbnail(context videoIndexContext, video videoFilename) indexThumbnail {
+	videoHash := video.hash()
+	fileSystemLocation := fmt.Sprintf("%s/%s.png", context.videoDirectory, video.hash())
+	videoLocation := fmt.Sprintf("%s/%s", context.videoDirectory, video)
+	URL := videoFilesLocation + videoHash + ".png"
+	return indexThumbnail{videoLocation, fileSystemLocation, URL}
+}
+
+func (t indexThumbnail) EnsureExistence() {
+	_, err := os.Open(t.fileSystemLocation)
+	if err == nil {
+		return
+	}
+	thumbnailGenerationCommand := exec.Command(
+		"totem-video-thumbnailer", "-s", "640", t.videoLocation, t.fileSystemLocation)
+	thumbnailGenerationCommand.Run()
 }
 
 func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
@@ -42,36 +73,15 @@ func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 	return rows
 }
 
-func (vi videoIndexHandler) generateThumbnail(videoFileName string) string {
-	videoHash := sha1.Sum([]byte(videoFileName))
-	expectedFilename := fmt.Sprintf("%s/%x.png", vi.videoDirectory, videoHash)
-	videoPath := vi.videoDirectory + "/" + videoFileName
-	thumbnailGenerationCommand := exec.Command(
-		"totem-video-thumbnailer", "-s", "640", videoPath, expectedFilename)
-	err := thumbnailGenerationCommand.Run()
-	if err == nil {
-		return expectedFilename
-	}
-	return ""
-}
-
-func (vi videoIndexHandler) getVideoThumbnailFileName(videoFileName string) string {
-	videoHash := sha1.Sum([]byte(videoFileName))
-	expectedFilename := fmt.Sprintf("%s/%x.png", vi.videoDirectory, videoHash)
-	_, err := os.Open(expectedFilename)
-	if err == nil {
-		return fmt.Sprintf("%x.png", videoHash)
-	}
-	return vi.generateThumbnail(videoFileName)
-}
-
-func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
+func (vi videoIndexContext) handleRequest(w http.ResponseWriter, r *http.Request) {
 	var videoFiles []videoFile
 	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			thumbnail := vi.getVideoThumbnailFileName(fileInfo.Name())
-			file := videoFile{FileName: fileInfo.Name(), ThumbnailFileName: thumbnail}
+			filename := videoFilename(fileInfo.Name())
+			thumbnail := CreateThumbnail(vi, filename)
+			thumbnail.EnsureExistence()
+			file := videoFile{FileName: fileInfo.Name(), Thumbnail: thumbnail}
 			videoFiles = append(videoFiles, file)
 		}
 	}
@@ -95,7 +105,7 @@ func serve(videoDirectory string, port int) {
 	handleStrippedStaticFiles("/static/", "static")
 	handleStrippedStaticFiles(videoFilesLocation, videoDirectory)
 	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoPageHandler)))
-	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoIndexHandler{videoDirectory: videoDirectory}.handle)))
+	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoIndexContext{videoDirectory: videoDirectory}.handleRequest)))
 	listenAddress := fmt.Sprintf(":%d", port)
 	http.ListenAndServe(listenAddress, nil)
 }
