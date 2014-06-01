@@ -31,7 +31,7 @@ func serve(videoDirectory string, port int) {
 	handleStrippedStaticFiles("/static/", "static")
 	handleStrippedStaticFiles(videoFilesLocation, videoDirectory)
 	http.Handle("/video/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(videoPageHandler)))
-	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(index.VideoIndexContext{VideoDirectory: videoDirectory}.HandleRequest)))
+	http.Handle("/", handlers.CombinedLoggingHandler(os.Stdout, http.HandlerFunc(index.VideoIndexContext{videoDirectory, videoFilesLocation}.HandleRequest)))
 	listenAddress := fmt.Sprintf(":%d", port)
 	http.ListenAndServe(listenAddress, nil)
 }

@@ -11,7 +11,10 @@ import (
 	"text/template"
 )
 
-var videoFilesLocation = "/videos/"
+type VideoIndexContext struct {
+	VideoDirectory string
+	VideoURLPrefix string
+}
 
 type videoFilename string
 
@@ -47,7 +50,7 @@ func CreateThumbnail(context VideoIndexContext, video videoFilename) indexThumbn
 }
 
 func (t indexThumbnail) GetURL() string {
-	expectedURL := videoFilesLocation + t.videoFile.Hash() + ".png"
+	expectedURL := t.context.VideoURLPrefix + t.videoFile.Hash() + ".png"
 	_, err := os.Open(t.fileSystemLocation)
 	if err == nil {
 		return expectedURL
@@ -76,10 +79,6 @@ func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 		rows = append(rows, new_row)
 	}
 	return rows
-}
-
-type VideoIndexContext struct {
-	VideoDirectory string
 }
 
 func (context VideoIndexContext) HandleRequest(w http.ResponseWriter, r *http.Request) {
