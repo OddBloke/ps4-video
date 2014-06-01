@@ -28,8 +28,14 @@ func (v videoFilename) FullPath(context videoIndexContext) string {
 }
 
 type videoFile struct {
-	FileName  string
+	FileName  videoFilename
 	Thumbnail indexThumbnail
+}
+
+func NewVideoFile(context videoIndexContext, fileName string) videoFile {
+	videoName := videoFilename(fileName)
+	thumbnail := CreateThumbnail(context, videoName)
+	return videoFile{videoName, thumbnail}
 }
 
 type videoIndexContext struct {
@@ -84,9 +90,7 @@ func (vi videoIndexContext) handleRequest(w http.ResponseWriter, r *http.Request
 	fileInfos, _ := ioutil.ReadDir(vi.videoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			filename := videoFilename(fileInfo.Name())
-			thumbnail := CreateThumbnail(vi, filename)
-			file := videoFile{FileName: fileInfo.Name(), Thumbnail: thumbnail}
+			file := NewVideoFile(vi, fileInfo.Name())
 			videoFiles = append(videoFiles, file)
 		}
 	}
