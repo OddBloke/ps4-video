@@ -11,6 +11,7 @@ import (
 	"text/template"
 )
 
+// VideoIndexContext defines the parameters for index page generation
 type VideoIndexContext struct {
 	VideoDirectory string
 	VideoURLPrefix string
@@ -32,9 +33,9 @@ type videoFile struct {
 	Thumbnail indexThumbnail
 }
 
-func NewVideoFile(context VideoIndexContext, fileName string) videoFile {
+func newVideoFile(context VideoIndexContext, fileName string) videoFile {
 	videoName := videoFilename(fileName)
-	thumbnail := CreateThumbnail(context, videoName)
+	thumbnail := createThumbnail(context, videoName)
 	return videoFile{videoName, thumbnail}
 }
 
@@ -44,7 +45,7 @@ type indexThumbnail struct {
 	fileSystemLocation string
 }
 
-func CreateThumbnail(context VideoIndexContext, video videoFilename) indexThumbnail {
+func createThumbnail(context VideoIndexContext, video videoFilename) indexThumbnail {
 	fileSystemLocation := fmt.Sprintf("%s/%s.png", context.VideoDirectory, video.Hash())
 	return indexThumbnail{context, video, fileSystemLocation}
 }
@@ -66,27 +67,28 @@ func (t indexThumbnail) GetURL() string {
 
 func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 	var rows [][]videoFile
-	var new_row []videoFile
+	var newRow []videoFile
 	for _, file := range videoFiles {
-		if len(new_row) == rowLength {
-			rows = append(rows, new_row)
-			new_row = []videoFile{file}
+		if len(newRow) == rowLength {
+			rows = append(rows, newRow)
+			newRow = []videoFile{file}
 		} else {
-			new_row = append(new_row, file)
+			newRow = append(newRow, file)
 		}
 	}
-	if len(new_row) > 0 {
-		rows = append(rows, new_row)
+	if len(newRow) > 0 {
+		rows = append(rows, newRow)
 	}
 	return rows
 }
 
+// HandleRequest generates an index page in the context it is called with
 func (context VideoIndexContext) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	var videoFiles []videoFile
 	fileInfos, _ := ioutil.ReadDir(context.VideoDirectory)
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
-			file := NewVideoFile(context, fileInfo.Name())
+			file := newVideoFile(context, fileInfo.Name())
 			videoFiles = append(videoFiles, file)
 		}
 	}
