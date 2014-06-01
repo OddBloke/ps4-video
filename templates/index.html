@@ -10,7 +10,7 @@
       <div class="row">
         {{range .}}
         <div class="col-lg-4">
-          <a href="/video/{{.FileName}}"><img style="width: 100%" src="{{if .ThumbnailFileName }}{{ .ThumbnailFileName }}{{else}}/static/default-thumbnail.png{{end}}">{{.FileName}}</a>
+          <a href="/video/{{.FileName}}"><img style="width: 100%" src="/videos/{{if .ThumbnailFileName }}{{ .ThumbnailFileName }}{{else}}/static/default-thumbnail.png{{end}}">{{.FileName}}</a>
         </div>
         {{end}}
       </div>

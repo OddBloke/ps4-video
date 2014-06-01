@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/gorilla/handlers"
@@ -41,15 +42,27 @@ func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
 	return rows
 }
 
+func (vi videoIndexHandler) generateThumbnail(videoFileName string) string {
+	videoHash := sha1.Sum([]byte(videoFileName))
+	expectedFilename := fmt.Sprintf("%s/%x.png", vi.videoDirectory, videoHash)
+	videoPath := vi.videoDirectory + "/" + videoFileName
+	thumbnailGenerationCommand := exec.Command(
+		"totem-video-thumbnailer", "-s", "640", videoPath, expectedFilename)
+	err := thumbnailGenerationCommand.Run()
+	if err == nil {
+		return expectedFilename
+	}
+	return ""
+}
+
 func (vi videoIndexHandler) getVideoThumbnailFileName(videoFileName string) string {
-	fmt.Print(videoFileName)
 	videoHash := sha1.Sum([]byte(videoFileName))
 	expectedFilename := fmt.Sprintf("%s/%x.png", vi.videoDirectory, videoHash)
 	_, err := os.Open(expectedFilename)
 	if err == nil {
-		return fmt.Sprintf("%s/%x.png", videoFilesLocation, videoHash)
+		return fmt.Sprintf("%x.png", videoHash)
 	}
-	return ""
+	return vi.generateThumbnail(videoFileName)
 }
 
 func (vi videoIndexHandler) handle(w http.ResponseWriter, r *http.Request) {
