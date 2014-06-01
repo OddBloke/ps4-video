@@ -18,14 +18,18 @@ var videoFilesLocation = "/videos/"
 
 type videoFilename string
 
+func (v videoFilename) Hash() string {
+	videoHash := sha1.Sum([]byte(v))
+	return fmt.Sprintf("%x", videoHash)
+}
+
+func (v videoFilename) FullPath(context videoIndexContext) string {
+	return fmt.Sprintf("%s/%s", context.videoDirectory, v)
+}
+
 type videoFile struct {
 	FileName  string
 	Thumbnail indexThumbnail
-}
-
-func (v videoFilename) hash() string {
-	videoHash := sha1.Sum([]byte(v))
-	return fmt.Sprintf("%x", videoHash)
 }
 
 type videoIndexContext struct {
@@ -33,27 +37,29 @@ type videoIndexContext struct {
 }
 
 type indexThumbnail struct {
-	videoLocation      string
+	context            videoIndexContext
+	videoFile          videoFilename
 	fileSystemLocation string
-	URL                string
 }
 
 func CreateThumbnail(context videoIndexContext, video videoFilename) indexThumbnail {
-	videoHash := video.hash()
-	fileSystemLocation := fmt.Sprintf("%s/%s.png", context.videoDirectory, video.hash())
-	videoLocation := fmt.Sprintf("%s/%s", context.videoDirectory, video)
-	URL := videoFilesLocation + videoHash + ".png"
-	return indexThumbnail{videoLocation, fileSystemLocation, URL}
+	fileSystemLocation := fmt.Sprintf("%s/%s.png", context.videoDirectory, video.Hash())
+	return indexThumbnail{context, video, fileSystemLocation}
 }
 
-func (t indexThumbnail) EnsureExistence() {
+func (t indexThumbnail) GetURL() string {
+	expectedURL := videoFilesLocation + t.videoFile.Hash() + ".png"
 	_, err := os.Open(t.fileSystemLocation)
 	if err == nil {
-		return
+		return expectedURL
 	}
 	thumbnailGenerationCommand := exec.Command(
-		"totem-video-thumbnailer", "-s", "640", t.videoLocation, t.fileSystemLocation)
-	thumbnailGenerationCommand.Run()
+		"totem-video-thumbnailer", "-s", "640", t.videoFile.FullPath(t.context), t.fileSystemLocation)
+	err = thumbnailGenerationCommand.Run()
+	if err == nil {
+		return expectedURL
+	}
+	return ""
 }
 
 func makeVideoRows(videoFiles []videoFile, rowLength int) [][]videoFile {
@@ -80,7 +86,6 @@ func (vi videoIndexContext) handleRequest(w http.ResponseWriter, r *http.Request
 		if strings.HasSuffix(fileInfo.Name(), ".mp4") {
 			filename := videoFilename(fileInfo.Name())
 			thumbnail := CreateThumbnail(vi, filename)
-			thumbnail.EnsureExistence()
 			file := videoFile{FileName: fileInfo.Name(), Thumbnail: thumbnail}
 			videoFiles = append(videoFiles, file)
 		}
